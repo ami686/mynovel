@@ -1,0 +1,43 @@
+{{- $depth := .depth }}
+{{- $maxDepth := 3 }}
+{{/*
+  maxDepth 控制菜单在"目录结构"部分最多显示几层子级：
+  1 = 只显示到第二层（如：短篇 → 童话，格林童话不显示）
+  2 = 显示到第三层（如：短篇 → 童话 → 格林童话，当前设置）
+  3 = 显示到第四层（如：短篇 → 童话 → 格林童话 → 格林童话名篇）
+*/}}
+{{- range .sections }}
+    {{- $cur := . }}
+    {{- $children := .Sections }}
+    {{- $showChildren := and $children (lt $depth $maxDepth) }}
+    <li class="menu-item{{ if $showChildren }} has-dropdown{{ end }}">
+        <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+        {{- if $showChildren }}
+            {{- $order := slice }}
+            {{- with site.Data.menu_order }}
+                {{- with index . $cur.Title }}
+                    {{- $order = . }}
+                {{- end }}
+            {{- end }}
+            {{- $ordered := slice }}
+            {{- $usedTitles := slice }}
+            {{- range $order }}
+                {{- $t := .title }}
+                {{- range $children }}
+                    {{- if eq .Title $t }}
+                        {{- $ordered = $ordered | append . }}
+                        {{- $usedTitles = $usedTitles | append .Title }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+            {{- range $children }}
+                {{- if not (in $usedTitles .Title) }}
+                    {{- $ordered = $ordered | append . }}
+                {{- end }}
+            {{- end }}
+        <ul class="dropdown-menu">
+            {{- partial "section-item.html" (dict "sections" $ordered "depth" (add $depth 1)) }}
+        </ul>
+        {{- end }}
+    </li>
+{{- end }}

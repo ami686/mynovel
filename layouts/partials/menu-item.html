@@ -1,0 +1,89 @@
+{{- $currentPage := .currentPage }}
+{{- range .items }}
+    {{- $menu_item_url := (cond (strings.HasSuffix .URL "/") .URL (printf "%s/" .URL)) | absLangURL }}
+    {{- $page_url := $currentPage.Permalink | absLangURL }}
+    {{- $is_search := eq .URL "/search/" }}
+    {{- $sectionPage := or .Page (site.GetPage .URL) }}
+    {{- $menuChildren := .Children }}
+    {{- $sectionChildren := and $sectionPage $sectionPage.Sections }}
+    {{- $is_home := or (eq .URL "/") (eq .URL "") }}
+    {{- $hasChildren := and (or $menuChildren $sectionChildren) (not $is_home) }}
+
+    <li class="menu-item{{ if $hasChildren }} has-dropdown{{ end }}">
+        <a href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
+        {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}>
+            <span {{- if eq $menu_item_url $page_url }} class="active" {{- end }}>
+                {{- .Pre }}
+                {{- if $is_search }}
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                {{- else }}
+                {{- .Name -}}
+                {{- end }}
+                {{ .Post -}}
+            </span>
+            {{- if (findRE "://" .URL) }}&nbsp;
+            <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" height="12" width="12">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                <path d="M15 3h6v6"></path>
+                <path d="M10 14L21 3"></path>
+            </svg>
+            {{- end }}
+        </a>
+
+        {{- if $hasChildren }}
+            {{- if $menuChildren }}
+            <ul class="dropdown-menu">
+                {{- partial "menu-item.html" (dict "items" $menuChildren "currentPage" $currentPage) }}
+            </ul>
+            {{- else if $sectionChildren }}
+            {{- $secs := $sectionPage.Sections }}
+            {{- $order := slice }}
+            {{- with site.Data.menu_order }}
+                {{- with index . $sectionPage.Title }}
+                    {{- $order = . }}
+                {{- end }}
+            {{- end }}
+            {{- $col1 := slice }}
+            {{- $col2 := slice }}
+            {{- $usedTitles := slice }}
+            {{- range $order }}
+                {{- $t := .title }}
+                {{- $col := .col }}
+                {{- range $secs }}
+                    {{- if eq .Title $t }}
+                        {{- $usedTitles = $usedTitles | append .Title }}
+                        {{- if eq $col 2 }}
+                            {{- $col2 = $col2 | append . }}
+                        {{- else }}
+                            {{- $col1 = $col1 | append . }}
+                        {{- end }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+            {{- range $secs }}
+                {{- if not (in $usedTitles .Title) }}
+                    {{- if le (len $col1) (len $col2) }}
+                        {{- $col1 = $col1 | append . }}
+                    {{- else }}
+                        {{- $col2 = $col2 | append . }}
+                    {{- end }}
+                {{- end }}
+            {{- end }}
+            <div class="dropdown-columns">
+                <ul class="dropdown-menu dropdown-col">
+                    {{- partial "section-item.html" (dict "sections" $col1 "depth" 1) }}
+                </ul>
+                {{- if $col2 }}
+                <ul class="dropdown-menu dropdown-col">
+                    {{- partial "section-item.html" (dict "sections" $col2 "depth" 1) }}
+                </ul>
+                {{- end }}
+            </div>
+            {{- end }}
+        {{- end }}
+    </li>
+{{- end }}

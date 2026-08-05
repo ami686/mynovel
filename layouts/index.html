@@ -1,0 +1,72 @@
+{{ define "main" }}
+<style>
+.category-tag {
+  display: inline-block;
+  color: #666;
+  font-size: 15px;
+  padding: 0 0 0 6px;
+  margin-left: 0;
+  border-left: 2px solid #ccc;
+  vertical-align: middle;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.latest-list a:not(.category-tag) {
+  flex: 1 1 auto;
+  max-width: 70%;
+}
+@media (max-width: 1023px) {
+  .category-tag {
+    font-size: 12px;
+  }
+}
+</style>
+<div class="page-layout">
+  {{/* 左栏:内容区 */}}
+  <div class="main-content">
+    <div class="home-grid">
+      <div class="category-card">
+        <h3 class="card-title">最新文章</h3>
+        <ul class="article-list latest-list">
+          {{ range first 3 .Site.RegularPages }}
+          <li>
+            <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+            {{ with .Parent }}<a href="{{ .RelPermalink }}" class="category-tag">{{ .Title }}</a>{{ end }}
+          </li>
+          {{ end }}
+        </ul>
+      </div>
+      {{/* ══════ 各级分类卡片:不分层级,随机排列 ══════ */}}
+      {{ $allSections := where site.Pages "Kind" "section" }}
+      {{ range shuffle $allSections }}
+      {{ $section := . }}
+      <div class="category-card">
+        <h3 class="card-title"><a href="{{ $section.RelPermalink }}">{{ $section.Title }}</a><a class="more-link" href="{{ $section.RelPermalink }}">更多»</a></h3>
+        {{ if $section.RegularPages }}
+        <ul class="article-list">
+          {{ range first 3 (shuffle $section.RegularPages) }}
+          <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+          {{ end }}
+        </ul>
+        {{ else }}
+        {{/* 分类下没有文章,随机展示其3个子分类名称 */}}
+        <ul class="article-list">
+          {{ range first 3 (shuffle $section.Sections) }}
+          <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+          {{ end }}
+        </ul>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{/* 右栏:侧边栏,先放占位框,之后往这里塞广告代码 */}}
+  <div class="sidebar">
+    <div class="sidebar-box"></div>
+    <div class="sidebar-box"></div>
+  </div>
+</div>
+{{ end }}

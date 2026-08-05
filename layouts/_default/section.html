@@ -1,0 +1,264 @@
+{{ define "main" }}
+<style>
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  font-size: 26px;
+  font-weight: 700;
+  white-space: nowrap;
+  margin: 0;              /* 新增：清除 h1 默认的上下外边距 */
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 23px;   
+  }
+}
+
+.section-desc {
+  font-size: 14px;
+  color: #888;
+}
+
+.header-area {
+  background: #ffffff;
+  border-radius: 8px;
+  margin: 0 0 7px 0;
+  padding: 7px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.article-area {
+  background: #e0f2fe;
+  border-radius: 8px;
+  padding: 7px 1px 7px 1px;
+  margin-top: 3px;
+}
+
+/* ===== 分类页文章卡片 ===== */
+
+.article-list-full {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.article-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 18px 2px 10px 6px;
+  min-width: 0;
+}
+
+.article-card-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .article-card-title {
+    font-size: 15px;
+  }
+}
+.article-card-title a {
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.article-card-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.article-card-summary {
+  font-size: 17px;
+  color: #555;
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;       /* 限制显示3行 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .article-card-summary {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .article-card-summary {
+    -webkit-line-clamp: 5;
+  }
+}
+
+@media (max-width: 768px) {
+  .article-list-full {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.pagination a,
+.pagination span {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #5b7c99;
+  background: #f7f8fa;
+}
+
+.pagination span.current {
+  background: #5b7c99;
+  color: #fff;
+}
+</style>
+
+<div class="page-layout">
+
+  <div class="main-content">
+
+    <div class="header-area">
+      {{/* 面包屑 */}}
+      <div class="breadcrumbs">
+        <a href="{{ "/" | absLangURL }}">首页</a>
+        {{- $ancestors := slice -}}
+        {{- $p := .Parent -}}
+        {{- range seq 10 -}}
+          {{- if and $p $p.Parent -}}
+            {{- $ancestors = $ancestors | append $p -}}
+            {{- $p = $p.Parent -}}
+          {{- end -}}
+        {{- end -}}
+        {{- range (collections.Reverse $ancestors) }}
+          &nbsp;/&nbsp;<a href="{{ .RelPermalink }}">{{ .Title }}</a>
+        {{- end }}
+        &nbsp;/&nbsp;{{ .Title }}
+      </div>
+
+      {{/* 分类名称 + 简介 */}}
+      <div class="section-header">
+        <h1 class="section-title">{{ .Title }}</h1>
+        {{ with .Params.description }}
+        <span class="section-desc">{{ . }}</span>
+        {{ end }}
+      </div>
+    </div>
+
+   {{ if .Sections }}
+        {{/* 有子分类:卡片网格,子分类随机排列,每个卡片随机展示3篇 */}}
+        <div class="home-grid">
+          {{ range shuffle .Sections }}
+          {{/* ══════ 新增：合并 also_in 里跨挂到本子分类的文章 ══════ */}}
+          {{ $catKey := strings.TrimPrefix "/" (strings.TrimSuffix "/" .RelPermalink) }}
+          {{ $catKey = strings.TrimPrefix "c/" $catKey }}
+          {{ $extra := where site.RegularPages "Params.also_in" "intersect" (slice $catKey) }}
+          {{ $cardPages := .RegularPages | union $extra }}
+          {{/* ═══════════════════════════════════════════════════════ */}}
+          <div class="category-card">
+            <h3 class="card-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a><a class="more-link" href="{{ .RelPermalink }}">更多»</a></h3>
+            {{ if $cardPages }}
+            <ul class="article-list">
+              {{ range first 3 (shuffle $cardPages) }}
+              <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+              {{ end }}
+            </ul>
+            {{ else }}
+            {{/* ══════ 新增：子分类没有文章时,展示该子分类下所有子分类名称 ══════ */}}
+            <ul class="article-list">
+              {{ range .Sections }}
+              <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+              {{ end }}
+            </ul>
+            {{ end }}
+          </div>
+          {{ end }}
+        </div>
+   {{ end }}
+
+    {{/* ══════ 新增：无论是否有子分类,只要本分类下有直属文章(含 also_in 合并),另起一块展示 ══════ */}}
+    {{ $catKey := strings.TrimPrefix "/" (strings.TrimSuffix "/" .RelPermalink) }}
+    {{ $catKey = strings.TrimPrefix "c/" $catKey }}
+    {{ $extra := where site.RegularPages "Params.also_in" "intersect" (slice $catKey) }}
+    {{ $sectionPages := .RegularPages | union $extra }}
+
+    {{ if $sectionPages }}
+      {{/* 按发布时间倒序排列:最新在前,最早在后,分页每页20篇 */}}
+      {{/* 编号按发布时间正序计算:最早发布的编号为1,不受显示顺序影响 */}}
+      {{ $paginator := .Paginate ($sectionPages.ByDate.Reverse) 20 }}
+      {{ $allAsc := $sectionPages.ByDate }}
+      <div class="article-area">
+        <div class="article-list-full">
+          {{ range $paginator.Pages }}
+          {{ $current := . }}
+          {{ $num := 0 }}
+          {{ range $i, $p := $allAsc }}
+            {{ if eq $p.RelPermalink $current.RelPermalink }}
+              {{ $num = add $i 1 }}
+            {{ end }}
+          {{ end }}
+          <div class="article-card">
+            <h3 class="article-card-title"><a href="{{ $current.RelPermalink }}">{{ $num }}. {{ $current.Title }}</a></h3>
+            <div class="article-card-date"><span>{{ $current.Date.Format "2006-01-02" }}</span><a class="more-link" href="{{ $current.RelPermalink }}">更多»</a></div>
+            <div class="article-card-summary">{{ $current.Summary | truncate 100 "..." }}</div>
+          </div>
+          {{ end }}
+        </div>
+
+        {{ if gt $paginator.TotalPages 1 }}
+        <div class="pagination">
+          {{ if $paginator.HasPrev }}
+          <a href="{{ $paginator.Prev.URL }}">← 上一页</a>
+          {{ end }}
+          {{ range $paginator.Pagers }}
+            {{ if eq . $paginator }}
+            <span class="current">{{ .PageNumber }}</span>
+            {{ else }}
+            <a href="{{ .URL }}">{{ .PageNumber }}</a>
+            {{ end }}
+          {{ end }}
+          {{ if $paginator.HasNext }}
+          <a href="{{ $paginator.Next.URL }}">下一页 →</a>
+          {{ end }}
+        </div>
+        {{ end }}
+      </div>
+    {{ end }}
+
+  </div>
+
+  {{/* 侧边栏 */}}
+  <div class="sidebar">
+    <div class="sidebar-box">{{ partial "ads/sidebar-1.html" . }}</div>
+    <div class="sidebar-box">{{ partial "ads/sidebar-2.html" . }}</div>
+  </div>
+
+</div>
+{{ end }}

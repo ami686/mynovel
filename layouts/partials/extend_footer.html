@@ -1,0 +1,430 @@
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var isTouch = window.matchMedia('(hover: none)').matches;
+
+  if (!isTouch) return;
+
+  // ===== 触摸屏：点击展开逻辑 =====
+  document.querySelectorAll('.menu-item.has-dropdown > a').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      var parentLi = link.parentElement;
+      if (!parentLi.classList.contains('open')) {
+        e.preventDefault();
+        document.querySelectorAll('.menu-item.has-dropdown.open').forEach(function (li) {
+          li.classList.remove('open');
+        });
+        parentLi.classList.add('open');
+      }
+    });
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.menu-item.has-dropdown')) {
+      document.querySelectorAll('.menu-item.has-dropdown.open').forEach(function (li) {
+        li.classList.remove('open');
+      });
+    }
+  });
+});
+</script>
+
+<!-- ===== Mega Menu：PC/手机统一横向大面板 ===== -->
+<style>
+html, body {
+  overflow-x: hidden;
+}
+
+.menu {
+  display: flex;
+  gap: 24px;
+  position: relative;
+}
+
+/* 定位基准改为整个导航栏，让面板始终贴近 logo，不会跟着触发它的菜单项跑到屏幕外 */
+.header-nav {
+  position: relative;
+  overflow: visible;
+}
+
+.menu {
+  overflow: visible;
+}
+
+/* 第1层：主面板，宽度按内容自适应，超过上限就换行收窄，不再固定宽度 */
+.menu > .menu-item.has-dropdown > .dropdown-menu,
+.menu > .menu-item.has-dropdown > .dropdown-columns {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-72%);
+  width: max-content;
+  min-width: 0;
+  max-width: 94vw;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 16px 18px;
+  z-index: 100;
+  list-style: none;
+  box-sizing: border-box;
+}
+/* 手动配置的菜单：展开时纵向列表 */
+.menu > .menu-item.has-dropdown:hover > .dropdown-menu,
+.menu > .menu-item.has-dropdown.open > .dropdown-menu {
+  display: block;
+}
+/* 自动分类菜单：展开时横向两栏，栏宽跟随各自内容自适应，超出上限时靠换行收窄，不再强制等宽 */
+.menu > .menu-item.has-dropdown:hover > .dropdown-columns,
+.menu > .menu-item.has-dropdown.open > .dropdown-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.dropdown-columns .dropdown-col {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+/* 每一列的卡片外观（如"经典童话"一整列） */
+.dropdown-columns .dropdown-col > .menu-item {
+  width: 100%;
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+}
+
+/* 顶级导航字号（首页/短篇/连载），覆盖主题 header.css 里 .menu a 的默认值 */
+.menu > .menu-item > a {
+  font-size: 20px;
+}
+
+@media (max-width: 768px) {
+  .menu > .menu-item > a {
+    font-size: 15px;
+  }
+}
+
+/* 卡片标题（2级，下拉内容第1层，即"童话""寓言"这些分组名） */
+.dropdown-columns .dropdown-col > .menu-item > a {
+  font-weight: 700;
+  color: #222;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 20px;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 5px;
+}
+
+@media (max-width: 768px) {
+.dropdown-columns .dropdown-col > .menu-item > a {
+    font-size: 15px;
+  }
+}
+
+/* 统一清除所有层级 ul/li 的默认圆点、内外边距，避免残留浏览器默认列表样式 */
+.menu .dropdown-menu,
+.menu .dropdown-col,
+.menu .dropdown-columns {
+  list-style: none;
+}
+.menu .dropdown-menu li,
+.menu .dropdown-col li {
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+
+/* 列内容器：所有更深层级统一在这里纵向堆叠，取消一切绝对定位/浮动 */
+.menu .dropdown-menu .dropdown-menu {
+  position: static !important;
+  display: flex !important;
+  flex-direction: column;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  min-width: 0;
+  max-width: none;
+  list-style: none;
+}
+
+/* 3级项目之间的间距（比如"格林童话大合集"和"安徒生童话"之间） */
+.menu .dropdown-menu .dropdown-menu {
+  gap: 18px;
+}
+
+/* 3级 → 4级：某个3级项目下面展开的4级列表，跟它自己文字之间的间距；
+   同时也是4级项目彼此之间的间距 */
+.menu .dropdown-menu .dropdown-menu .dropdown-menu {
+  margin-top: 15px;
+  gap: 13px;
+}
+
+/* 3级每往深一层，缩进 + 字号递减，最多控制到第4层，超过后不再继续缩小 */
+.menu .dropdown-menu .dropdown-menu .menu-item > a {
+  font-weight: 400;
+  color: #222;
+  font-size: 18px;
+  padding-left: 10px;
+}
+
+@media (max-width: 768px) {
+.menu .dropdown-menu .dropdown-menu .menu-item > a {
+    font-size: 14px;
+  }
+}
+
+/* 4级 */
+.menu .dropdown-menu .dropdown-menu .dropdown-menu .menu-item > a {
+  font-size: 17px;
+  color: #222;
+  padding-left: 20px;
+}
+
+@media (max-width: 768px) {
+.menu .dropdown-menu .dropdown-menu .dropdown-menu .menu-item > a {
+    font-size: 13px;
+  }
+}
+
+.menu .dropdown-menu .dropdown-menu .dropdown-menu .dropdown-menu .menu-item > a {
+  font-size: 15px;
+  color: #999;
+  padding-left: 30px;
+}
+.menu .dropdown-menu a {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.menu .dropdown-menu a:hover {
+  color: #0073aa !important;
+}
+
+</style>
+
+<!-- 底部固定栏 -->
+<style>
+body {
+  padding-bottom: 60px;
+}
+.fixed-footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 16px 0px 16px;
+  box-sizing: border-box;
+}
+.fixed-footer-bar .footer-author {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#smart-translate-dropdown-container {
+  margin: 0 !important;
+  flex: 1;
+  min-width: 0;
+}
+</style>
+
+<div class="fixed-footer-bar">
+  <span class="footer-author">作者</span>
+
+  <!-- 容器：增加了 position: relative 以便控制布局 -->
+  <div id="smart-translate-dropdown-container" style="font-family: sans-serif; display: none; position: relative;">
+
+     <!-- 【新增】智能弹窗提示 (初始隐藏，由JS控制显示) -->
+     <div id="smart-native-popup" style="
+         display: none;
+         background-color: #e3f2fd;
+         border: 1px solid #2196f3;
+         border-radius: 8px;
+         padding: 12px;
+         margin-bottom: 10px;
+         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+         animation: fadeIn 0.5s;
+         position: absolute;
+         bottom: 100%;
+         left: 0;
+         width: 260px;">
+
+         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+             <span style="font-size: 13px; color: #555;">Detected Language:</span>
+             <span onclick="closeSmartPopup()" style="cursor: pointer; font-size: 18px; color: #999; line-height: 1;">&times;</span>
+         </div>
+
+         <div style="display: flex; gap: 10px; align-items: center;">
+             <button id="smart-btn-action" style="
+                 flex: 1;
+                 background-color: #2196f3;
+                 color: white;
+                 border: none;
+                 padding: 8px 12px;
+                 border-radius: 4px;
+                 font-weight: bold;
+                 cursor: pointer;
+                 font-size: 14px;
+                 text-align: left;
+                 display: flex; align-items: center;">
+                 <!-- 图标和文字由 JS 填充 -->
+             </button>
+         </div>
+     </div>
+
+     <!-- 原有的下拉菜单 -->
+     <select id="smart-lang-selector" onchange="triggerSelectorTranslate(this)" style="
+         width: 100%;
+         max-width: 180px;
+         padding: 8px;
+         border: 1px solid #0073aa;
+         border-radius: 5px;
+         background-color: #f9f9f9;
+         font-weight: bold;
+         font-size: 13px;
+         cursor: pointer;">
+     </select>
+  </div>
+</div>
+
+<!-- 简单的淡入动画样式 -->
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+(function() {
+    // 主逻辑函数
+    function initSmartSelector() {
+        if (window.smartSelectorInitialized) return;
+        window.smartSelectorInitialized = true;
+
+        const allLanguages = [
+            { code: 'en', name: 'English (英语)' },
+            { code: 'zh-TW', name: 'Traditional Chinese (繁體中文)' },
+            { code: 'ja', name: 'Japanese (日本語)' },
+            { code: 'ko', name: 'Korean (한국어)' },
+            { code: 'fr', name: 'French (Français)' },
+            { code: 'de', name: 'German (Deutsch)' },
+            { code: 'es', name: 'Spanish (Español)' },
+            { code: 'ru', name: 'Russian (Pусский)' },
+            { code: 'pt', name: 'Portuguese (Português)' },
+            { code: 'it', name: 'Italian (Italiano)' },
+            { code: 'vi', name: 'Vietnamese (Tiếng Việt)' },
+            { code: 'th', name: 'Thai (ไทย)' },
+            { code: 'id', name: 'Indonesian (Bahasa Indonesia)' },
+            { code: 'ar', name: 'Arabic (العربية)' },
+            { code: 'hi', name: 'Hindi (हिन्दी)' },
+            { code: 'ms', name: 'Malay (Bahasa Melayu)' }
+        ];
+
+        // 1. 获取语言
+        const userLang = navigator.language || navigator.userLanguage || '';
+        const isSimplifiedUser = userLang.toLowerCase() === 'zh-cn' || userLang.toLowerCase() === 'zh';
+
+        // 2. 显示主容器
+        const container = document.getElementById('smart-translate-dropdown-container');
+        if (container) container.style.display = 'block';
+
+        const selectBox = document.getElementById('smart-lang-selector');
+        let matchedLang = null; // 用于存储匹配到的母语对象
+
+        if (selectBox) {
+            selectBox.innerHTML = '';
+
+            // 添加默认项
+            const promptOption = document.createElement('option');
+            promptOption.value = '';
+            promptOption.textContent = '🌐 Translate this page...';
+            promptOption.selected = true;
+            selectBox.appendChild(promptOption);
+
+            // 循环添加选项并寻找匹配
+            allLanguages.forEach(lang => {
+                const option = document.createElement('option');
+                option.value = lang.code;
+                option.textContent = lang.name;
+
+                if (!isSimplifiedUser) {
+                     if (lang.code.toLowerCase() === userLang.toLowerCase() ||
+                         lang.code.split('-')[0].toLowerCase() === userLang.split('-')[0].toLowerCase()) {
+
+                        option.textContent = `✅ ${lang.name}`;
+                        matchedLang = lang; // 记录匹配到的语言
+                     }
+                }
+                selectBox.appendChild(option);
+            });
+        }
+
+        // 3. 【核心新增】如果匹配到了母语，显示上方弹窗
+        if (matchedLang) {
+            const popup = document.getElementById('smart-native-popup');
+            const btn = document.getElementById('smart-btn-action');
+
+            if (popup && btn) {
+                // 设置按钮文字和点击事件
+                btn.innerHTML = `<span style="margin-right:8px;">Google Translate to:</span>
+                                 <span style="font-size:1.1em; text-decoration:underline;">${matchedLang.name}</span>`;
+
+                btn.onclick = function() {
+                    doTranslate(matchedLang.code);
+                };
+
+                // 显示弹窗
+                popup.style.display = 'block';
+            }
+        }
+    }
+
+    // 启动逻辑
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initSmartSelector, 1);
+    } else {
+        document.addEventListener('DOMContentLoaded', initSmartSelector);
+    }
+})();
+
+// --- 全局功能函数 ---
+
+// 执行翻译跳转
+function doTranslate(targetLang) {
+    if (targetLang) {
+        const currentUrl = encodeURIComponent(window.location.href);
+        const translateUrl = 'https://translate.google.com/translate?sl=auto&tl=' + targetLang + '&u=' + currentUrl;
+        window.open(translateUrl, '_blank');
+    }
+}
+
+// 下拉菜单触发
+function triggerSelectorTranslate(selectElement) {
+    const targetLang = selectElement.value;
+    doTranslate(targetLang);
+    if(targetLang) selectElement.selectedIndex = 0;
+}
+
+// 关闭弹窗
+function closeSmartPopup() {
+    const popup = document.getElementById('smart-native-popup');
+    if (popup) popup.style.display = 'none';
+}
+</script>

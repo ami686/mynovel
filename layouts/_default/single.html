@@ -1,0 +1,208 @@
+{{ define "main" }}
+<style>
+.article-page {
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0 5px;
+}
+
+.article-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+@media (max-width: 768px) {
+  .article-title {
+    font-size: 22px;
+  }
+}
+
+.article-date {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.article-content {
+  font-size: 18px;
+  line-height: 1.9;
+  background: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .article-content {
+    font-size: 16px;
+  }
+}
+
+.article-content p {
+  margin-bottom: 1em;
+}
+
+.inline-ad {
+  float: left;
+  max-width: 50%;
+  margin: 0 20px 10px 0;
+}
+.inline-ad:empty {
+  display: none;
+}
+
+.article-content::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.article-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.nav-box {
+  flex: 1;
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+.nav-box.next {
+  text-align: right;
+}
+.nav-label {
+  font-size: 12px;
+  color: #999;
+  display: block;
+  margin-bottom: 4px;
+}
+.nav-title {
+  font-size: 14px;
+  color: #5b7c99;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.back-to-category {
+  text-align: center;
+}
+.back-to-category a {
+  display: inline-block;
+  background: #f7f8fa;
+  color: #5b7c99;
+  text-decoration: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.back-to-category a:hover {
+  background: #eceef1;
+}
+</style>
+
+{{/* 计算当前文章在所属分类中的序号(最早发布为第1篇) */}}
+{{ $siblings := .Parent.RegularPages.ByDate }}
+{{ $currentNum := 0 }}
+{{ range $i, $p := $siblings }}
+  {{ if eq $p.RelPermalink $.RelPermalink }}
+    {{ $currentNum = add $i 1 }}
+  {{ end }}
+{{ end }}
+
+<div class="page-layout">
+
+  {{/* 左栏:文章内容 */}}
+  <div class="main-content article-page">
+
+   {{/* 面包屑 */}}
+    {{- $siblings := .Parent.RegularPages.ByDate -}}
+    {{- $currentNum := 0 -}}
+    {{- range $i, $p := $siblings -}}
+      {{- if eq $p.File.UniqueID $.File.UniqueID -}}
+        {{- $currentNum = add $i 1 -}}
+      {{- end -}}
+    {{- end -}}
+    <div class="breadcrumbs">
+      <a href="{{ "/" | absLangURL }}">首页</a>
+      {{- $ancestors := slice -}}
+      {{- $p := .Parent -}}
+      {{- range seq 10 -}}
+        {{- if and $p $p.Parent -}}
+          {{- $ancestors = $ancestors | append $p -}}
+          {{- $p = $p.Parent -}}
+        {{- end -}}
+      {{- end -}}
+      {{- range (collections.Reverse $ancestors) }}
+        &nbsp;/&nbsp;<a href="{{ .RelPermalink }}">{{ .Title }}</a>
+      {{- end }}
+      &nbsp;/&nbsp;{{ $currentNum }}
+    </div>
+   
+
+    {{/* 标题 */}}
+    <h1 class="article-title">{{ .Title }}</h1>
+
+    {{/* 日期 */}}
+    <div class="article-date">{{ .Date.Format "2006-01-02" }}</div>
+
+    {{/* 正文(含环绕广告) */}}
+    <div class="article-content">
+      <div class="inline-ad">{{ partial "ads/inline.html" . }}</div>
+      {{ .Content }}
+    </div>
+
+    {{/* 上一篇/下一篇 */}}
+    {{ if or .PrevInSection .NextInSection }}
+    <div class="article-nav">
+      {{ if .PrevInSection }}
+      {{ $prevNum := 0 }}
+      {{ range $i, $p := $siblings }}
+        {{ if eq $p.RelPermalink $.PrevInSection.RelPermalink }}
+          {{ $prevNum = add $i 1 }}
+        {{ end }}
+      {{ end }}
+      <a class="nav-box prev" href="{{ .PrevInSection.RelPermalink }}">
+        <span class="nav-title">← {{ $prevNum }}.{{ .PrevInSection.Title }}</span>
+      </a>
+      {{ else }}
+      <div class="nav-box"></div>
+      {{ end }}
+
+      {{ if .NextInSection }}
+      {{ $nextNum := 0 }}
+      {{ range $i, $p := $siblings }}
+        {{ if eq $p.RelPermalink $.NextInSection.RelPermalink }}
+          {{ $nextNum = add $i 1 }}
+        {{ end }}
+      {{ end }}
+      <a class="nav-box next" href="{{ .NextInSection.RelPermalink }}">
+        <span class="nav-title">{{ $nextNum }}.{{ .NextInSection.Title }} →</span>
+      </a>
+      {{ else }}
+      <div class="nav-box"></div>
+      {{ end }}
+    </div>
+    {{ end }}
+
+    {{/* 返回所属分类 */}}
+    {{ if .Parent }}
+    <div class="back-to-category">
+      <a href="{{ .Parent.RelPermalink }}">← 返回「{{ .Parent.Title }}」</a>
+    </div>
+    {{ end }}
+
+  </div>
+
+  {{/* 右栏:侧边栏,内容以后再定 */}}
+  <div class="sidebar">
+    <div class="sidebar-box">{{ partial "ads/sidebar-1.html" . }}</div>
+    <div class="sidebar-box">{{ partial "ads/sidebar-2.html" . }}</div>
+  </div>
+
+</div>
+{{ end }}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>其他故事 on 故事鸟</title>
+    <link>http://localhost:1313/c/other/</link>
+    <description>Recent content in 其他故事 on 故事鸟</description>
+    <generator>Hugo</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 20 Mar 2025 15:09:28 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/c/other/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>结婚</title>
+      <link>http://localhost:1313/post/53/</link>
+      <pubDate>Thu, 20 Mar 2025 15:09:28 +0000</pubDate>
+      <guid>http://localhost:1313/post/53/</guid>
+      <description>&lt;p&gt;珍妮对好友说她要结婚了，但过了一阵子都没什么动静。&lt;/p&gt;
+&lt;p&gt;她的好友便问她婚事准备得怎样了，珍妮沮丧地说：“恐怕婚事要告吹了，当我未婚夫喝醉时，我根本不想嫁给他，而当他清醒时，他根本不想娶我。”&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
