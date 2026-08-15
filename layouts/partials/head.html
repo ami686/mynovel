@@ -185,10 +185,12 @@
 
 {{- partial "extend_head.html" . -}}
 
-{{- /* Misc */}}
+{{- /* 结构化数据：不受生产环境限制，本地预览也能看到，方便调试 */}}
+{{- partial "templates/schema_json.html" . }}
+
+{{- /* Misc：统计代码、社交分享卡片等，仅生产环境加载，避免本地预览污染统计数据 */}}
 {{- if hugo.IsProduction | or (eq site.Params.env "production") }}
 {{- partial "google_analytics.html" . }}
 {{- partial "templates/opengraph.html" . }}
 {{- partial "templates/twitter_cards.html" . }}
-{{- partial "templates/schema_json.html" . }}
 {{- end -}}

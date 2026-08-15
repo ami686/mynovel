@@ -1,0 +1,16 @@
+{{ if eq .Section "video" }}
+{{- $videoData := dict
+    "@context" "https://schema.org"
+    "@type" "VideoObject"
+    "name" .Title
+    "description" (.Summary | plainify)
+    "uploadDate" (.Date.Format "2006-01-02T15:04:05Z07:00")
+    "embedUrl" (printf "https://player.bilibili.com/player.html?bvid=%s" .Params.bvid)
+}}
+{{- with .Resources.GetMatch "cover.*" }}
+  {{- $videoData = merge $videoData (dict "thumbnailUrl" .Permalink) }}
+{{- end }}
+<script type="application/ld+json">
+{{ $videoData | jsonify (dict "indent" "  ") | safeJS }}
+</script>
+{{ end }}

@@ -117,6 +117,20 @@
   }
 }
 
+.category-card-img {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: block;
+}
+
+.article-card-img {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: block;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -183,7 +197,8 @@
           {{ $cardPages := .RegularPages | union $extra }}
           {{/* ═══════════════════════════════════════════════════════ */}}
           <div class="category-card">
-            <h3 class="card-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a><a class="more-link" href="{{ .RelPermalink }}">更多»</a></h3>
+            {{ $sectionLink := .RelPermalink }}
+            <h3 class="card-title"><a href="{{ $sectionLink }}">{{ .Title }}</a><a class="more-link" href="{{ $sectionLink }}">更多»</a></h3>
             {{ if $cardPages }}
             <ul class="article-list">
               {{ range first 3 (shuffle $cardPages) }}
@@ -197,6 +212,13 @@
               <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
               {{ end }}
             </ul>
+            {{ end }}
+            {{ $img := .Resources.GetMatch "cover.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}
+            {{ if not $img }}{{ $img = .Resources.GetMatch "1.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}{{ end }}
+            {{ with $img }}
+            {{ $thumb := . }}
+            {{ if gt .Width 400 }}{{ $thumb = .Resize "400x" }}{{ end }}
+            <a href="{{ $sectionLink }}"><img class="category-card-img" src="{{ $thumb.RelPermalink }}" alt="" loading="lazy"></a>
             {{ end }}
           </div>
           {{ end }}
@@ -227,7 +249,14 @@
           <div class="article-card">
             <h3 class="article-card-title"><a href="{{ $current.RelPermalink }}">{{ $num }}. {{ $current.Title }}</a></h3>
             <div class="article-card-date"><span>{{ $current.Date.Format "2006-01-02" }}</span><a class="more-link" href="{{ $current.RelPermalink }}">更多»</a></div>
-            <div class="article-card-summary">{{ $current.Summary | truncate 100 "..." }}</div>
+            <div class="article-card-summary">{{ $current.Plain | truncate 100 "..." }}</div>
+            {{ $img := $current.Resources.GetMatch "cover.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}
+            {{ if not $img }}{{ $img = $current.Resources.GetMatch "1.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}{{ end }}
+            {{ with $img }}
+            {{ $thumb := . }}
+            {{ if gt .Width 400 }}{{ $thumb = .Resize "400x" }}{{ end }}
+            <a href="{{ $current.RelPermalink }}"><img class="article-card-img" src="{{ $thumb.RelPermalink }}" alt="" loading="lazy"></a>
+            {{ end }}
           </div>
           {{ end }}
         </div>

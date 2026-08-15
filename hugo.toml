@@ -1,5 +1,7 @@
 baseURL = "https://novel.1001k.com/"
 languageCode = "zh-cn"
+hasCJKLanguage = true
+summaryLength = 100
 title = "故事鸟"
 theme = "PaperMod"
 defaultContentLanguage = "zh-cn"
@@ -20,6 +22,7 @@ name = "搜索"
 url = "/search/"
 weight = 4
 [params]
+author = "故事鸟"
 ShowReadingTime = false
 ShowShareButtons = false
 ShowPostNavLinks = true
@@ -32,6 +35,9 @@ text = "故事鸟"
 icon = "/images/logo.png"
 iconHeight = 30
 
+[params.assets]
+  logo = "images/logo.png"
+
 [outputs]
 home = ["HTML", "RSS", "JSON"]
 
@@ -41,14 +47,12 @@ home = ["HTML", "RSS", "JSON"]
     kind = 'section'
 
 [[permalinks]]
-  pattern = '/post/:slug/'
+  pattern = '/video/:slug/'
   [permalinks.target]
     kind = 'page'
-    path = '/short/**'
+    path = '/video/**'
 
 [[permalinks]]
   pattern = '/post/:slug/'
   [permalinks.target]
     kind = 'page'
-    path = '/serial/**'
-
