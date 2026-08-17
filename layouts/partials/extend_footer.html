@@ -38,11 +38,20 @@ html, body {
   gap: 24px;
   position: relative;
 }
+@media (max-width: 768px) {
+  .menu {
+    gap: 13px;
+  }
+}
 
 /* 定位基准改为整个导航栏，让面板始终贴近 logo，不会跟着触发它的菜单项跑到屏幕外 */
 .header-nav {
   position: relative;
   overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px; /* 网站名称和菜单之间的距离，改这个数值即可 */
 }
 
 .menu {
