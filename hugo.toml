@@ -53,6 +53,12 @@ home = ["HTML", "RSS", "JSON"]
     path = '/video/**'
 
 [[permalinks]]
+  pattern = '/search/'
+  [permalinks.target]
+    kind = 'page'
+    path = '/search'
+
+[[permalinks]]
   pattern = '/post/:slug/'
   [permalinks.target]
     kind = 'page'
