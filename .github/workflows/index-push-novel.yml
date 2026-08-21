@@ -1,0 +1,70 @@
+name: 推送更新到搜索引擎
+
+on:
+  workflow_dispatch:  # 只能手动触发
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest'
+          extended: true
+
+      - name: 构建站点(生成最新 sitemap)
+        run: hugo --minify
+
+      - name: 恢复上次的 sitemap 记录
+        uses: actions/cache@v4
+        with:
+          path: last-sitemap.xml
+          key: sitemap-cache-v1
+          restore-keys: sitemap-cache-v1
+
+      - name: 对比新旧 sitemap,找出变更 URL
+        id: diff
+        run: |
+          NEW=public/sitemap.xml
+          OLD=last-sitemap.xml
+
+          # 提取所有 <loc> URL
+          grep -oP '(?<=<loc>).*?(?=</loc>)' "$NEW" | sort > new_urls.txt
+
+          if [ -f "$OLD" ]; then
+            grep -oP '(?<=<loc>).*?(?=</loc>)' "$OLD" | sort > old_urls.txt
+          else
+            touch old_urls.txt
+          fi
+
+          # 找出新增/变化的 URL
+          comm -13 old_urls.txt new_urls.txt > changed_urls.txt
+
+          COUNT=$(wc -l < changed_urls.txt)
+          echo "发现 $COUNT 个变更"
+          cat changed_urls.txt
+
+      - name: 推送到 IndexNow(必应/Yandex等)
+        if: success()
+        run: |
+          if [ -s changed_urls.txt ]; then
+            URLS=$(cat changed_urls.txt | jq -R . | jq -s .)
+            curl -X POST "https://api.indexnow.org/indexnow" \
+              -H "Content-Type: application/json" \
+              -d "{\"host\":\"novel.1001k.com\",\"key\":\"novel2026cfIndexNowKey5t7wn2\",\"keyLocation\":\"https://novel.1001k.com/novel2026cfIndexNowKey5t7wn2.txt\",\"urlList\":$URLS}"
+          else
+            echo "没有变更,跳过推送"
+          fi
+
+      - name: 保存本次 sitemap,供下次对比
+        run: cp public/sitemap.xml last-sitemap.xml
+
+      - name: 更新缓存
+        uses: actions/cache/save@v4
+        with:
+          path: last-sitemap.xml
+          key: sitemap-cache-v1-${{ github.run_id }}
