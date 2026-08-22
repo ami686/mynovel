@@ -60,6 +60,12 @@ jobs:
             echo "没有变更,跳过推送"
           fi
 
+      - name: Ping Google(提醒它来重新抓取 sitemap)
+        if: success()
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=https://novel.1001k.com/sitemap.xml"
+          echo "已 ping Google"
+
       - name: 保存本次 sitemap,供下次对比
         run: cp public/sitemap.xml last-sitemap.xml
 
