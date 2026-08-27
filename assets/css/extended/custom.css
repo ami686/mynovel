@@ -214,7 +214,7 @@ body {
 /* 文章正文插图 + 分类页标题下配图：尺寸逻辑一致，限宽居中 */
 .article-content img,
 .section-cover-img {
-  max-width: 600px;
+  max-width: 500px;
   width: 100%;
   height: auto;
   display: block;
