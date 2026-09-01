@@ -1,4 +1,4 @@
-{{ if eq .Section "video" }}
+{{ if and (eq .Section "video") .IsPage }}
 {{- $videoData := dict
     "@context" "https://schema.org"
     "@type" "VideoObject"

@@ -1,3 +1,8 @@
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 main.main {
   max-width: 100% !important;
   padding-top: 0 !important;
@@ -202,10 +207,32 @@ body {
 
 }
 
-.article-content img {
-  max-width: 600px;
+/* ==========================================================
+   图片样式统一管理
+   ========================================================== */
+
+/* 文章正文插图 + 分类页标题下配图：尺寸逻辑一致，限宽居中 */
+.article-content img,
+.section-cover-img {
+  max-width: 500px;
   width: 100%;
   height: auto;
   display: block;
   margin: 0.5em auto;
+}
+
+/* 分类页文章卡片配图：铺满卡片宽度 */
+.article-card-img {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: block;
+}
+
+/* 分类页子分类卡片配图：铺满卡片宽度 */
+.category-card-img {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 8px;
+  display: block;
 }

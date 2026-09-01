@@ -117,20 +117,6 @@
   }
 }
 
-.category-card-img {
-  width: 100%;
-  border-radius: 6px;
-  margin-top: 8px;
-  display: block;
-}
-
-.article-card-img {
-  width: 100%;
-  border-radius: 6px;
-  margin-top: 8px;
-  display: block;
-}
-
 .pagination {
   display: flex;
   justify-content: center;
@@ -184,6 +170,14 @@
         <span class="section-desc">{{ . }}</span>
         {{ end }}
       </div>
+
+      {{/* ══════ 新增：分类自身配图 cover，找不到则留空 ══════ */}}
+      {{ $sectionImg := .Resources.GetMatch "cover.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}
+      {{ with $sectionImg }}
+      {{ $thumb := . }}
+      {{ if gt .Width 800 }}{{ $thumb = .Resize "800x" }}{{ end }}
+      <img class="section-cover-img" src="{{ $thumb.RelPermalink }}" alt="{{ $.Title }}" loading="lazy">
+      {{ end }}
     </div>
 
    {{ if .Sections }}

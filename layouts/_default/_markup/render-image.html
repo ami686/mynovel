@@ -1,0 +1,15 @@
+﻿{{ $img := .Page.Resources.GetMatch .Destination }}
+{{ if $img }}
+  {{ $watermark := resources.Get "images/watermark.png" }}
+  {{ if $watermark }}
+    {{ $x := div (sub $img.Width $watermark.Width) 2 }}
+    {{ $y := div (sub $img.Height $watermark.Height) 2 }}
+    {{ with $img.Filter (images.Overlay $watermark $x $y) }}
+      <img src="{{ .RelPermalink }}" alt="{{ $.Text }}" loading="lazy">
+    {{ end }}
+  {{ else }}
+    <img src="{{ $img.RelPermalink }}" alt="{{ $.Text }}" loading="lazy">
+  {{ end }}
+{{ else }}
+  <img src="{{ .Destination }}" alt="{{ $.Text }}" loading="lazy">
+{{ end }}
