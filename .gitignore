@@ -3,7 +3,7 @@ public/
 fix_md_blank_lines.py
 new_post_新文章.py
 new_post_合并版.py
-运行_修复空行(用这个).bat
+运行_修复空行用这个.bat
 /k[0-9]*/
 .hugo_build.lock
 resources/
