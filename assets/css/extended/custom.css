@@ -175,6 +175,7 @@ body {
   /* 页面改为单栏 */
   .page-layout {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .sidebar {

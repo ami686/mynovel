@@ -243,7 +243,7 @@
           <div class="article-card">
             <h3 class="article-card-title"><a href="{{ $current.RelPermalink }}">{{ $num }}. {{ $current.Title }}</a></h3>
             <div class="article-card-date"><span>{{ $current.Date.Format "2006-01-02" }}</span><a class="more-link" href="{{ $current.RelPermalink }}">更多»</a></div>
-            <div class="article-card-summary">{{ $current.Plain | truncate 100 "..." }}</div>
+            <div class="article-card-summary">{{ with $current.Description }}{{ . }}{{ else }}{{ $current.Plain }}{{ end }}</div>
             {{ $img := $current.Resources.GetMatch "cover.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}
             {{ if not $img }}{{ $img = $current.Resources.GetMatch "1.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}" }}{{ end }}
             {{ with $img }}

@@ -18,9 +18,21 @@
     {{- range $i, $e := .Params.keywords }}{{ if $i }}, {{ end }}{{ $e }}{{ end }} {{- else }}
     {{- range $i, $e := .Params.tags }}{{ if $i }}, {{ end }}{{ $e }}{{ end }} {{- end -}}">
 {{- end }}
-<meta name="description" content="{{- with .Description }}{{ . }}{{- else }}{{- if or .IsPage .IsSection}}
-    {{- .Summary | default (printf "%s - %s" .Title  site.Title) }}{{- else }}
-    {{- with site.Params.description }}{{ . }}{{- end }}{{- end }}{{- end -}}">
+{{- /* description：优先用手写的 .Description；没填的话，文章/分类页自动取正文纯文本，
+     首页取全站简介。不管来源是哪个，最终统一按100个字符截断，避免出现HTML空白或超长内容。 */}}
+{{- $rawDesc := "" -}}
+{{- with .Description }}{{ $rawDesc = . | plainify }}{{ end -}}
+{{- if not $rawDesc }}
+  {{- if or .IsPage .IsSection }}
+    {{- $rawDesc = replaceRE `\s+` " " (trim .Plain " ") }}
+    {{- if not $rawDesc }}{{ $rawDesc = printf "%s - %s" .Title site.Title }}{{ end }}
+  {{- else }}
+    {{- with site.Params.description }}{{ $rawDesc = . | plainify }}{{ end }}
+  {{- end }}
+{{- end -}}
+{{- $desc := $rawDesc -}}
+{{- if gt (len $rawDesc) 100 }}{{ $desc = printf "%s…" (substr $rawDesc 0 100) }}{{ end -}}
+<meta name="description" content="{{ $desc }}">
 <meta name="author" content="{{ (partial "author.html" . ) }}">
 <link rel="canonical" href="{{ if .Params.canonicalURL -}} {{ trim .Params.canonicalURL " " }} {{- else -}} {{ .Permalink }} {{- end }}">
 {{- if site.Params.analytics.google.SiteVerificationTag }}

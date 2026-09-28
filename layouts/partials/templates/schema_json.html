@@ -21,49 +21,61 @@
 }
 </script>
 {{- else if (or .IsPage .IsSection) }}
-{{/* BreadcrumbList */}}
-{{- $url := replace .Parent.Permalink ( printf "%s" site.Home.Permalink) "" }}
-{{- $lang_url := strings.TrimPrefix ( printf "%s/" .Lang) $url }}
-{{- $bc_list := (split $lang_url "/")}}
-{{- $scratch := newScratch }}
-{{- $scratch.Set "count" 0 }}
+{{/* BreadcrumbList —— 与页面上实际显示的面包屑（single.html 里的 .breadcrumbs）用同一套逻辑：
+     顺着 .Parent 往上追溯真实的页面父子关系，而不是拆解 URL 字符串。
+     这样不管以后 URL 结构怎么改，结构化数据和页面上看到的面包屑都会保持一致。 */}}
+{{- $ancestors := slice -}}
+{{- $p := .Parent -}}
+{{- range seq 20 -}}
+  {{- if and $p $p.Parent -}}
+    {{- $ancestors = $ancestors | append $p -}}
+    {{- $p = $p.Parent -}}
+  {{- end -}}
+{{- end -}}
+{{- $ancestors = collections.Reverse $ancestors -}}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-  {{- range $index, $element := $bc_list }}
-    {{- $scratch.Add "path" (printf "%s/" $element ) | safeJS }}
-    {{- $bc_pg := site.GetPage ($scratch.Get "path") -}}
-    {{- if (and ($bc_pg) (gt (len . ) 0))}}
-    {{- if (gt ($scratch.Get "count") 0) }}, {{end }}
     {
       "@type": "ListItem",
-      "position": {{ add 1 ($scratch.Get "count") }},
-      "name": {{ $bc_pg.Name }},
-      "item": {{ $bc_pg.Permalink | safeHTML }}
-    }
-    {{- $scratch.Add "count" 1 }}
+      "position": 1,
+      "name": {{ site.Title }},
+      "item": {{ site.Home.Permalink | safeHTML }}
+    },
+    {{- range $i, $a := $ancestors }}
+    {
+      "@type": "ListItem",
+      "position": {{ add 2 $i }},
+      "name": {{ $a.Title }},
+      "item": {{ $a.Permalink | safeHTML }}
+    },
     {{- end }}
-  {{- end }}
-  {{- if (gt ($scratch.Get "count") 0) }}, {{end }}
     {
       "@type": "ListItem",
-      "position": {{ add 1 ($scratch.Get "count") }},
-      "name": {{ .Name }},
+      "position": {{ add 2 (len $ancestors) }},
+      "name": {{ .Title }},
       "item": {{ .Permalink | safeHTML }}
     }
   ]
 }
 </script>
 {{- if .IsPage }}
+{{/* 菜谱页（content/recipes/ 下）不输出 BlogPosting，改由 single.html 里的 Recipe 结构化数据负责。
+     如果你的菜谱 section 名不是 "recipes"，把下面这行的 "recipes" 换成你实际的目录名。 */}}
+{{- if ne .Section "recipes" }}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "headline": {{ .Title | plainify}},
   "name": "{{ .Title | plainify }}",
-  "description": {{ with .Description | plainify }}{{ . }}{{ else }}{{ .Summary | plainify  }}{{ end -}},
+  {{- $rawDesc := .Description | plainify }}
+  {{- if not $rawDesc }}{{ $rawDesc = .Summary | plainify }}{{ end }}
+  {{- $desc := $rawDesc }}
+  {{- if gt (len $rawDesc) 100 }}{{ $desc = printf "%s…" (substr $rawDesc 0 100) }}{{ end }}
+  "description": {{ $desc }},
   {{- $keywords := .Params.keywords | default .Params.tags }}
   {{- if $keywords }}
   "keywords": {{ delimit $keywords ", " }},
@@ -117,5 +129,6 @@
   }
 }
 </script>
+{{- end }}{{/* ne .Section "recipes" end */}}
 {{- end }}{{/* .IsPage end */}}
 {{- end -}}
