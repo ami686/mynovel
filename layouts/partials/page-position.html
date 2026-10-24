@@ -1,0 +1,14 @@
+{{/* 传入文章页或分类页。返回 dict:
+     num  = 在上级分类文章流中的序号(0 表示不在流里,例如非数字子分类)
+     prev = 上一篇(序号 num-1),没有则 false
+     next = 下一篇(序号 num+1),没有则 false */}}
+{{ $num := 0 }}
+{{ $prev := false }}
+{{ $next := false }}
+{{ with .Parent }}
+  {{ $stream := partial "section-stream.html" . }}
+  {{ $num = (index $stream.numMap $.RelPermalink) | default 0 }}
+  {{ if gt $num 1 }}{{ $prev = index $stream.asc (sub $num 2) }}{{ end }}
+  {{ if and (gt $num 0) (lt $num (len $stream.asc)) }}{{ $next = index $stream.asc $num }}{{ end }}
+{{ end }}
+{{ return (dict "num" $num "prev" $prev "next" $next) }}

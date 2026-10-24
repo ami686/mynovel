@@ -1,0 +1,20 @@
+{{/* 传入 page-position.html 的返回值。上一篇序号 = num-1,下一篇序号 = num+1 */}}
+{{ if or .prev .next }}
+<div class="article-nav">
+  {{ if .prev }}
+  <a class="nav-box prev" href="{{ .prev.RelPermalink }}">
+    <span class="nav-title">← {{ sub .num 1 }}.{{ .prev.Title }}</span>
+  </a>
+  {{ else }}
+  <div class="nav-box"></div>
+  {{ end }}
+
+  {{ if .next }}
+  <a class="nav-box next" href="{{ .next.RelPermalink }}">
+    <span class="nav-title">{{ add .num 1 }}.{{ .next.Title }} →</span>
+  </a>
+  {{ else }}
+  <div class="nav-box"></div>
+  {{ end }}
+</div>
+{{ end }}

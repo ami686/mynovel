@@ -1,0 +1,44 @@
+{{- $sectionPage := . }}
+{{- $secs := $sectionPage.Sections }}
+{{- $order := slice }}
+{{- with hugo.Data.menu_order }}
+    {{- with index . $sectionPage.Title }}
+        {{- $order = . }}
+    {{- end }}
+{{- end }}
+{{- $col1 := slice }}
+{{- $col2 := slice }}
+{{- $usedTitles := slice }}
+{{- range $order }}
+    {{- $t := .title }}
+    {{- $col := .col }}
+    {{- range $secs }}
+        {{- if eq .Title $t }}
+            {{- $usedTitles = $usedTitles | append .Title }}
+            {{- if eq $col 2 }}
+                {{- $col2 = $col2 | append . }}
+            {{- else }}
+                {{- $col1 = $col1 | append . }}
+            {{- end }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+{{- range $secs }}
+    {{- if not (in $usedTitles .Title) }}
+        {{- if le (len $col1) (len $col2) }}
+            {{- $col1 = $col1 | append . }}
+        {{- else }}
+            {{- $col2 = $col2 | append . }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+<div class="dropdown-columns">
+    <ul class="dropdown-menu dropdown-col">
+        {{- partial "section-item.html" (dict "sections" $col1 "depth" 1) }}
+    </ul>
+    {{- if $col2 }}
+    <ul class="dropdown-menu dropdown-col">
+        {{- partial "section-item.html" (dict "sections" $col2 "depth" 1) }}
+    </ul>
+    {{- end }}
+</div>

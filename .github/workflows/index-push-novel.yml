@@ -2,13 +2,24 @@ name: 推送更新到搜索引擎
 
 on:
   workflow_dispatch:  # 只能手动触发
+    inputs:
+      dry_run:
+        description: '仅预览(勾选=只看变更列表,不实际推送;不勾选=正式推送)'
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   push:
     runs-on: ubuntu-latest
+    env:
+      SITE_HOST: 1001k.com          # 本站域名(不带 https://),每个站只需要改这一行
+      INDEXNOW_KEY: hugo2026cfIndexNowKey8x3qz9m
     steps:
       - name: 检出仓库
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取完整提交历史,否则 enableGitInfo 算出的 lastmod 会全站错乱
 
       - name: 安装 Hugo
         uses: peaceiris/actions-hugo@v3
@@ -19,6 +30,38 @@ jobs:
       - name: 构建站点(生成最新 sitemap)
         run: hugo --minify
 
+      - name: 检查域名与密钥文件(出错会直接报红停止)
+        run: |
+          ERR=0
+
+          # 1. sitemap 里的网址必须全部属于本站,否则说明 hugo.toml 的 baseURL 或这里的 SITE_HOST 写错了
+          grep -oP '(?<=<loc>).*?(?=</loc>)' public/sitemap.xml > all_locs.txt
+          BAD=$(grep -v "^https://${SITE_HOST}/" all_locs.txt | head -5 || true)
+          if [ ! -s all_locs.txt ]; then
+            echo "::error::sitemap.xml 里没有读到任何网址,请检查构建是否正常"
+            ERR=1
+          elif [ -n "$BAD" ]; then
+            echo "::error::sitemap 里有不属于 ${SITE_HOST} 的网址,请检查域名是否写错。例如:"
+            echo "$BAD"
+            ERR=1
+          fi
+
+          # 2. 构建产物里必须有密钥文件(即 static 文件夹里放了)
+          if [ ! -f "public/${INDEXNOW_KEY}.txt" ]; then
+            echo "::error::构建结果里没有 ${INDEXNOW_KEY}.txt,请把它放进 static 文件夹"
+            ERR=1
+          fi
+
+          # 3. 线上必须能打开密钥文件,且内容等于密钥
+          REMOTE=$(curl -sL --max-time 20 "https://${SITE_HOST}/${INDEXNOW_KEY}.txt" || true)
+          if [ "$(echo "$REMOTE" | tr -d '[:space:]')" != "$INDEXNOW_KEY" ]; then
+            echo "::error::线上打不开 https://${SITE_HOST}/${INDEXNOW_KEY}.txt (或内容不对),可能还没上传部署"
+            ERR=1
+          fi
+
+          if [ "$ERR" = "1" ]; then exit 1; fi
+          echo "域名与密钥文件检查通过:${SITE_HOST}"
+
       - name: 恢复上次的 sitemap 记录
         uses: actions/cache/restore@v4
         with:
@@ -26,50 +69,81 @@ jobs:
           key: sitemap-cache-v1
           restore-keys: sitemap-cache-v1
 
-      - name: 对比新旧 sitemap,找出变更 URL
+      - name: 对比新旧 sitemap,找出变更 URL(含内容更新)
         id: diff
         run: |
           NEW=public/sitemap.xml
           OLD=last-sitemap.xml
 
-          # 提取所有 <loc> URL
-          grep -oP '(?<=<loc>).*?(?=</loc>)' "$NEW" | sort > new_urls.txt
+          # 提取 "url|lastmod" 格式,一行代表一篇文章的当前状态
+          # hugo --minify 会把 sitemap.xml 压缩成没有换行的一整行,
+          # 所以这里先按 </url> 把它拆回一行一个 <url>...</url> 块,
+          # 再从每一块里分别抓 loc 和 lastmod,避免把整份 sitemap 误判成一条记录
+          extract_url_lastmod() {
+            sed 's/<\/url>/<\/url>\n/g' "$1" \
+              | grep '<url>' \
+              | while IFS= read -r line; do
+                  loc=$(echo "$line" | grep -oP '(?<=<loc>).*?(?=</loc>)')
+                  lastmod=$(echo "$line" | grep -oP '(?<=<lastmod>).*?(?=</lastmod>)')
+                  if [ -n "$loc" ]; then
+                    echo "$loc|$lastmod"
+                  fi
+                done | sort
+          }
+
+          extract_url_lastmod "$NEW" > new_urls.txt
 
           if [ -f "$OLD" ]; then
-            grep -oP '(?<=<loc>).*?(?=</loc>)' "$OLD" | sort > old_urls.txt
+            extract_url_lastmod "$OLD" > old_urls.txt
           else
             touch old_urls.txt
           fi
 
-          # 找出新增/变化的 URL
-          comm -13 old_urls.txt new_urls.txt > changed_urls.txt
+          # 找出新增的行,以及 lastmod 发生变化的行
+          comm -13 old_urls.txt new_urls.txt > changed_lines.txt
+
+          # 从变更行里只取出 URL 部分,供后面推送使用
+          cut -d'|' -f1 changed_lines.txt | sort -u > changed_urls.txt
 
           COUNT=$(wc -l < changed_urls.txt)
-          echo "发现 $COUNT 个变更"
+          echo "================================"
+          echo "发现 $COUNT 个变更(含新增文章和内容更新)"
+          echo "================================"
           cat changed_urls.txt
-
-      - name: 推送到 IndexNow(必应/Yandex等)
-        if: success()
-        run: |
-          if [ -s changed_urls.txt ]; then
-            URLS=$(cat changed_urls.txt | jq -R . | jq -s .)
-            curl -X POST "https://api.indexnow.org/indexnow" \
-              -H "Content-Type: application/json" \
-              -d "{\"host\":\"1001k.com\",\"key\":\"hugo2026cfIndexNowKey8x3qz9m\",\"keyLocation\":\"https://1001k.com/hugo2026cfIndexNowKey8x3qz9m.txt\",\"urlList\":$URLS}"
-          else
-            echo "没有变更,跳过推送"
+          echo "================================"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "当前是【仅预览】模式,以上是本次会被推送的 URL 列表。"
+            echo "确认无误后,请重新手动触发一次本 workflow,并把 dry_run 取消勾选,才会真正推送。"
           fi
 
-      - name: Ping Google(提醒它来重新抓取 sitemap)
-        if: success()
+      - name: 推送到 IndexNow(必应/Yandex等)
+        if: ${{ success() && inputs.dry_run == false }}
         run: |
-          curl -s "https://www.google.com/ping?sitemap=https://1001k.com/sitemap.xml"
-          echo "已 ping Google"
+          if [ ! -s changed_urls.txt ]; then
+            echo "没有变更,跳过推送"
+            exit 0
+          fi
+          BODY=$(jq -n --arg host "$SITE_HOST" --arg key "$INDEXNOW_KEY" \
+            --arg loc "https://${SITE_HOST}/${INDEXNOW_KEY}.txt" \
+            --argjson urls "$(jq -R . < changed_urls.txt | jq -s .)" \
+            '{host:$host,key:$key,keyLocation:$loc,urlList:$urls}')
+          CODE=$(curl -s -o resp.txt -w "%{http_code}" -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" -d "$BODY")
+          echo "IndexNow 返回状态码: $CODE"
+          cat resp.txt
+          if [ "$CODE" = "200" ] || [ "$CODE" = "202" ]; then
+            echo "推送成功(202 表示已接收,稍后验证密钥)"
+          else
+            echo "::error::IndexNow 推送失败,状态码 $CODE,请查看上面的返回内容"
+            exit 1
+          fi
 
-      - name: 保存本次 sitemap,供下次对比
+      - name: 保存本次 sitemap,供下次对比(仅预览模式不保存,避免影响下次真实对比)
+        if: ${{ inputs.dry_run == false }}
         run: cp public/sitemap.xml last-sitemap.xml
 
-      - name: 更新缓存
+      - name: 更新缓存(仅预览模式不更新)
+        if: ${{ inputs.dry_run == false }}
         uses: actions/cache/save@v4
         with:
           path: last-sitemap.xml

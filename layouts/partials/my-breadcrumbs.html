@@ -1,0 +1,16 @@
+{{/* 传入 dict: "page" 当前页, "last" 最后一项显示的内容(序号或标题) */}}
+<div class="breadcrumbs">
+  <a href="{{ "/" | absLangURL }}">首页</a>
+  {{- $ancestors := slice -}}
+  {{- $p := .page.Parent -}}
+  {{- range seq 10 -}}
+    {{- if and $p $p.Parent -}}
+      {{- $ancestors = $ancestors | append $p -}}
+      {{- $p = $p.Parent -}}
+    {{- end -}}
+  {{- end -}}
+  {{- range (collections.Reverse $ancestors) }}
+    &nbsp;/&nbsp;<a href="{{ .RelPermalink }}">{{ .Title }}</a>
+  {{- end }}
+  &nbsp;/&nbsp;{{ .last }}
+</div>

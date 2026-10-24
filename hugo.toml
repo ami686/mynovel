@@ -6,7 +6,6 @@ title = "故事鸟"
 theme = "PaperMod"
 defaultContentLanguage = "zh-cn"
 sectionPagesMenu = "main"
-enableGitInfo = true
 [pagination]
 pagerSize = 10
 [markup]

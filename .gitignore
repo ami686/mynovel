@@ -8,3 +8,6 @@ new_post_合并版排除video.py
 /k[0-9]*/
 .hugo_build.lock
 resources/
+存稿/
+add_lastmod.py
+new_post.py

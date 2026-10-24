@@ -1,4 +1,5 @@
 ---
 title: "三个离婚的女人"
+schema: series
 ---
 

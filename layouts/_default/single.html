@@ -118,44 +118,16 @@
 }
 </style>
 
-{{/* 计算当前文章在所属分类中的序号(最早发布为第1篇) */}}
-{{ $siblings := .Parent.RegularPages.ByDate }}
-{{ $currentNum := 0 }}
-{{ range $i, $p := $siblings }}
-  {{ if eq $p.RelPermalink $.RelPermalink }}
-    {{ $currentNum = add $i 1 }}
-  {{ end }}
-{{ end }}
+{{/* 序号、上一篇、下一篇(与分类页同一套逻辑) */}}
+{{ $pos := partial "page-position.html" . }}
 
 <div class="page-layout">
 
   {{/* 左栏:文章内容 */}}
   <div class="main-content article-page">
 
-   {{/* 面包屑 */}}
-    {{- $siblings := .Parent.RegularPages.ByDate -}}
-    {{- $currentNum := 0 -}}
-    {{- range $i, $p := $siblings -}}
-      {{- if eq $p.File.UniqueID $.File.UniqueID -}}
-        {{- $currentNum = add $i 1 -}}
-      {{- end -}}
-    {{- end -}}
-    <div class="breadcrumbs">
-      <a href="{{ "/" | absLangURL }}">首页</a>
-      {{- $ancestors := slice -}}
-      {{- $p := .Parent -}}
-      {{- range seq 10 -}}
-        {{- if and $p $p.Parent -}}
-          {{- $ancestors = $ancestors | append $p -}}
-          {{- $p = $p.Parent -}}
-        {{- end -}}
-      {{- end -}}
-      {{- range (collections.Reverse $ancestors) }}
-        &nbsp;/&nbsp;<a href="{{ .RelPermalink }}">{{ .Title }}</a>
-      {{- end }}
-      &nbsp;/&nbsp;{{ $currentNum }}
-    </div>
-   
+    {{/* 面包屑 */}}
+    {{ partial "my-breadcrumbs.html" (dict "page" . "last" $pos.num) }}
 
     {{/* 标题 */}}
     <h1 class="article-title">{{ .Title }}</h1>
@@ -170,37 +142,7 @@
     </div>
 
     {{/* 上一篇/下一篇 */}}
-    {{ if or .PrevInSection .NextInSection }}
-    <div class="article-nav">
-      {{ if .PrevInSection }}
-      {{ $prevNum := 0 }}
-      {{ range $i, $p := $siblings }}
-        {{ if eq $p.RelPermalink $.PrevInSection.RelPermalink }}
-          {{ $prevNum = add $i 1 }}
-        {{ end }}
-      {{ end }}
-      <a class="nav-box prev" href="{{ .PrevInSection.RelPermalink }}">
-        <span class="nav-title">← {{ $prevNum }}.{{ .PrevInSection.Title }}</span>
-      </a>
-      {{ else }}
-      <div class="nav-box"></div>
-      {{ end }}
-
-      {{ if .NextInSection }}
-      {{ $nextNum := 0 }}
-      {{ range $i, $p := $siblings }}
-        {{ if eq $p.RelPermalink $.NextInSection.RelPermalink }}
-          {{ $nextNum = add $i 1 }}
-        {{ end }}
-      {{ end }}
-      <a class="nav-box next" href="{{ .NextInSection.RelPermalink }}">
-        <span class="nav-title">{{ $nextNum }}.{{ .NextInSection.Title }} →</span>
-      </a>
-      {{ else }}
-      <div class="nav-box"></div>
-      {{ end }}
-    </div>
-    {{ end }}
+    {{ partial "article-nav.html" $pos }}
 
     {{/* 返回所属分类 */}}
     {{ if .Parent }}

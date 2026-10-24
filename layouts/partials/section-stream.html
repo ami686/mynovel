@@ -1,0 +1,32 @@
+{{/* 传入分类页。返回 dict:
+     pages      = 本分类的文章流(直属文章 + also_in 跨挂 + 纯数字目录名的子分类)
+     normalSecs = 非纯数字目录名的子分类(作为置顶卡片)
+     asc        = 文章流按日期升序(最早发布为第1篇)
+     numMap     = 链接 -> 序号 的字典,查序号直接 index,不用遍历 */}}
+{{ $numPaths := slice }}
+{{ range .Sections }}
+  {{ $dirName := "" }}
+  {{ with .File }}
+    {{ $dirName = .ContentBaseName }}
+  {{ else }}
+    {{ $dirName = path.Base (strings.TrimSuffix "/" .RelPermalink) }}
+  {{ end }}
+  {{ if findRE `^[0-9]+$` $dirName }}
+    {{ $numPaths = $numPaths | append .RelPermalink }}
+  {{ end }}
+{{ end }}
+{{ $numSecs := where .Sections "RelPermalink" "in" $numPaths }}
+{{ $normalSecs := where .Sections "RelPermalink" "not in" $numPaths }}
+
+{{ $catKey := strings.TrimPrefix "c/" (strings.TrimPrefix "/" (strings.TrimSuffix "/" .RelPermalink)) }}
+{{ $extra := where site.RegularPages "Params.also_in" "intersect" (slice $catKey) }}
+{{ $pages := .RegularPages | union $extra | union $numSecs }}
+{{ $asc := $pages.ByDate }}
+
+{{ $s := newScratch }}
+{{ range $i, $p := $asc }}
+  {{ $s.SetInMap "n" $p.RelPermalink (add $i 1) }}
+{{ end }}
+{{ $numMap := $s.Get "n" | default dict }}
+
+{{ return (dict "pages" $pages "normalSecs" $normalSecs "asc" $asc "numMap" $numMap) }}

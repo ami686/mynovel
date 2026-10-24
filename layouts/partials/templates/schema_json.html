@@ -1,29 +1,47 @@
 {{ if .IsHome }}
+{{/* ========== 首页：Organization / Person + WebSite ========== */}}
+{{- $sameAs := site.Params.schema.sameAs }}
+{{- if not $sameAs }}
+  {{- $urls := slice }}
+  {{- range site.Params.SocialIcons }}{{ $urls = $urls | append (trim .url " ") }}{{ end }}
+  {{- $sameAs = $urls }}
+{{- end }}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "{{- ( site.Params.schema.publisherType | default "Organization") | title -}}",
+  "@id": "{{ site.Home.Permalink }}#organization",
   "name": {{ site.Title }},
   "url": {{ site.Home.Permalink }},
-  "description": {{ site.Params.description | plainify | truncate 180 | safeHTML }},
   {{- if (eq site.Params.schema.publisherType "Person") }}
-  "image": {{ site.Params.assets.logo | default site.Params.assets.favicon | default "favicon.ico" | absURL }},
+  "image": {{ site.Params.assets.logo | default site.Params.assets.favicon | default "favicon.ico" | absURL }}
   {{- else }}
-  "logo": {{ site.Params.assets.logo | default site.Params.assets.favicon | default "favicon.ico" | absURL }},
+  "logo": {{ site.Params.assets.logo | default site.Params.assets.favicon | default "favicon.ico" | absURL }}
   {{- end }}
-  "sameAs": [
-    {{- if site.Params.schema.sameAs }}
-      {{ range $i, $e := site.Params.schema.sameAs }}{{ if $i }}, {{ end }}{{ trim $e " " }}{{ end }}
-    {{- else}}
-      {{ range $i, $e := site.Params.SocialIcons }}{{ if $i }}, {{ end }}{{ trim $e.url " " | safeURL }}{{ end }}
-    {{- end}}
-  ]
+  {{- with site.Params.description }},
+  "description": {{ . | plainify | truncate 180 | safeHTML }}
+  {{- end }}
+  {{- with $sameAs }},
+  "sameAs": {{ . | jsonify }}
+  {{- end }}
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "{{ site.Home.Permalink }}#website",
+  "name": {{ site.Title }},
+  "url": {{ site.Home.Permalink }},
+  "inLanguage": {{ .Language.Lang | default "en-us" }},
+  "publisher": {
+    "@id": "{{ site.Home.Permalink }}#organization"
+  }
 }
 </script>
 {{- else if (or .IsPage .IsSection) }}
-{{/* BreadcrumbList —— 与页面上实际显示的面包屑（single.html 里的 .breadcrumbs）用同一套逻辑：
-     顺着 .Parent 往上追溯真实的页面父子关系，而不是拆解 URL 字符串。
-     这样不管以后 URL 结构怎么改，结构化数据和页面上看到的面包屑都会保持一致。 */}}
+
+{{/* ========== 1. BreadcrumbList（所有内容页，保持原样） ========== */}}
 {{- $ancestors := slice -}}
 {{- $p := .Parent -}}
 {{- range seq 20 -}}
@@ -61,43 +79,28 @@
   ]
 }
 </script>
-{{- if .IsPage }}
-{{/* 菜谱页（content/recipes/ 下）不输出 BlogPosting，改由 single.html 里的 Recipe 结构化数据负责。
-     如果你的菜谱 section 名不是 "recipes"，把下面这行的 "recipes" 换成你实际的目录名。 */}}
-{{- if ne .Section "recipes" }}
+
+{{- if .IsSection }}
+{{/* ========== 2. 分类页 / 系列总页 ========== */}}
+{{- $desc := .Description | default (.Summary | plainify) | truncate 200 }}
+
+{{- if eq .Params.schema "series" }}
+{{/* 2a. front matter 标了 schema: series → CreativeWorkSeries */}}
+{{/* 系列的更新时间：取各篇里最新的修改时间 */}}
+{{- $latest := .Lastmod }}
+{{- range .RegularPages }}{{ if gt .Lastmod $latest }}{{ $latest = .Lastmod }}{{ end }}{{ end }}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": {{ .Title | plainify}},
-  "name": "{{ .Title | plainify }}",
-  {{- $rawDesc := .Description | plainify }}
-  {{- if not $rawDesc }}{{ $rawDesc = .Summary | plainify }}{{ end }}
-  {{- $desc := $rawDesc }}
-  {{- if gt (len $rawDesc) 100 }}{{ $desc = printf "%s…" (substr $rawDesc 0 100) }}{{ end }}
-  "description": {{ $desc }},
-  {{- $keywords := .Params.keywords | default .Params.tags }}
-  {{- if $keywords }}
-  "keywords": {{ delimit $keywords ", " }},
+  "@type": "CreativeWorkSeries",
+  "@id": "{{ .Permalink }}#series",
+  "name": {{ .Title | plainify }},
+  "url": {{ .Permalink | safeHTML }},
+  {{- with $desc }}
+  "description": {{ . }},
   {{- end }}
-  "articleBody": {{ .Content | safeJS | htmlUnescape | plainify }},
-  "wordCount": {{ .WordCount }},
   "inLanguage": {{ .Language.Lang | default "en-us" }},
-  {{ if .Params.cover.image -}}
-  "image":
-    {{- if (ne .Params.cover.relative true) -}}
-    {{ .Params.cover.image | absURL }},
-    {{- else -}}
-    {{ (path.Join .RelPermalink .Params.cover.image ) | absURL }},
-    {{- end}}
-  {{- else }}
-    {{- $images := partial "templates/_funcs/get-page-images" . -}}
-    {{- with index $images 0 -}}
-  "image": {{ .Permalink }},
-    {{- end }}
-  {{- end -}}
-  "datePublished": {{ .PublishDate }},
-  "dateModified": {{ .Lastmod }},
+  "dateModified": {{ $latest.Format "2006-01-02T15:04:05Z07:00" }},
   {{- with (.Params.author | default site.Params.author) }}
   "author":
     {{- if (or (eq (printf "%T" .) "[]string") (eq (printf "%T" .) "[]interface {}")) -}}
@@ -115,6 +118,110 @@
   },
     {{- end -}}
   {{- end }}
+  "hasPart": [
+    {{- range $i, $c := .RegularPages.ByDate }}
+    {{- if $i }},{{ end }}
+    {
+      "@type": "Article",
+      "name": {{ $c.Title | plainify }},
+      "url": {{ $c.Permalink | safeHTML }},
+      "position": {{ add $i 1 }}
+    }
+    {{- end }}
+  ]
+}
+</script>
+
+{{- else }}
+{{/* 2b. 普通分类页 / 合集页 → CollectionPage */}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": {{ .Title | plainify }},
+  "url": {{ .Permalink | safeHTML }},
+  {{- with $desc }}
+  "description": {{ . }},
+  {{- end }}
+  "inLanguage": {{ .Language.Lang | default "en-us" }},
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {{- range $i, $c := first 50 .Pages }}
+      {{- if $i }},{{ end }}
+      {
+        "@type": "ListItem",
+        "position": {{ add $i 1 }},
+        "url": {{ $c.Permalink | safeHTML }},
+        "name": {{ $c.Title | plainify }}
+      }
+      {{- end }}
+    ]
+  }
+}
+</script>
+{{- end }}{{/* series / collection end */}}
+
+{{- else if .IsPage }}
+{{/* ========== 3. 故事页 → Article（上级是系列则加 isPartOf） ========== */}}
+{{- $parent := .Parent }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": {{ .Title | plainify }},
+  "name": {{ .Title | plainify }},
+  {{- $rawDesc := .Description | plainify }}
+  {{- if not $rawDesc }}{{ $rawDesc = .Summary | plainify }}{{ end }}
+  {{- $desc := $rawDesc }}
+  {{- if gt (len $rawDesc) 100 }}{{ $desc = printf "%s…" (substr $rawDesc 0 100) }}{{ end }}
+  "description": {{ $desc }},
+  {{- $keywords := .Params.keywords | default .Params.tags }}
+  {{- if $keywords }}
+  "keywords": {{ delimit $keywords ", " }},
+  {{- end }}
+  "wordCount": {{ .WordCount }},
+  "inLanguage": {{ .Language.Lang | default "en-us" }},
+  {{ if .Params.cover.image -}}
+  "image":
+    {{- if (ne .Params.cover.relative true) -}}
+    {{ .Params.cover.image | absURL }},
+    {{- else -}}
+    {{ (path.Join .RelPermalink .Params.cover.image ) | absURL }},
+    {{- end}}
+  {{- else }}
+    {{- $images := partial "templates/_funcs/get-page-images" . -}}
+    {{- with index $images 0 -}}
+  "image": {{ .Permalink }},
+    {{- end }}
+  {{- end -}}
+  "datePublished": {{ .PublishDate.Format "2006-01-02T15:04:05Z07:00" }},
+  "dateModified": {{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }},
+  {{- with (.Params.author | default site.Params.author) }}
+  "author":
+    {{- if (or (eq (printf "%T" .) "[]string") (eq (printf "%T" .) "[]interface {}")) -}}
+  [{{- range $i, $v := . -}}
+  {{- if $i }}, {{end -}}
+  {
+    "@type": "Person",
+    "name": {{ $v }}
+  }
+  {{- end }}],
+    {{- else -}}
+  {
+    "@type": "Person",
+    "name": {{ . }}
+  },
+    {{- end -}}
+  {{- end }}
+  {{- if and $parent (eq $parent.Params.schema "series") }}
+  "isPartOf": {
+    "@type": "CreativeWorkSeries",
+    "@id": "{{ $parent.Permalink }}#series",
+    "name": {{ $parent.Title | plainify }},
+    "url": {{ $parent.Permalink | safeHTML }}
+  },
+  {{- end }}
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": {{ .Permalink | safeHTML }}
@@ -129,6 +236,5 @@
   }
 }
 </script>
-{{- end }}{{/* ne .Section "recipes" end */}}
-{{- end }}{{/* .IsPage end */}}
+{{- end }}{{/* IsSection / IsPage end */}}
 {{- end -}}
