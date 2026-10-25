@@ -13,7 +13,7 @@ jobs:
   push:
     runs-on: ubuntu-latest
     env:
-      SITE_HOST: 1001k.com          # 本站域名(不带 https://),每个站只需要改这一行
+      SITE_HOST: novel.1001k.com          # 本站域名(不带 https://),每个站只需要改这一行
       INDEXNOW_KEY: hugo2026cfIndexNowKey8x3qz9m
     steps:
       - name: 检出仓库
