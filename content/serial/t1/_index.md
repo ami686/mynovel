@@ -1,4 +1,5 @@
 ---
 title: "同事们在王宫"
+schema: series
 ---
 

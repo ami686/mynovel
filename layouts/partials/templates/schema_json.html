@@ -100,6 +100,9 @@
   "description": {{ . }},
   {{- end }}
   "inLanguage": {{ .Language.Lang | default "en-us" }},
+  {{- with .RegularPages.ByPublishDate }}
+  "datePublished": {{ (index . 0).PublishDate.Format "2006-01-02T15:04:05Z07:00" }},
+  {{- end }}
   "dateModified": {{ $latest.Format "2006-01-02T15:04:05Z07:00" }},
   {{- with (.Params.author | default site.Params.author) }}
   "author":
@@ -118,8 +121,11 @@
   },
     {{- end -}}
   {{- end }}
+  {{- /* 只列前2集 + 最新1集；总集数不超过2集时，只列已有的，不重复 */ -}}
+  {{- $all := .RegularPages.ByDate }}
+  {{- $n := len $all }}
   "hasPart": [
-    {{- range $i, $c := .RegularPages.ByDate }}
+    {{- range $i, $c := first 2 $all }}
     {{- if $i }},{{ end }}
     {
       "@type": "Article",
@@ -127,6 +133,16 @@
       "url": {{ $c.Permalink | safeHTML }},
       "position": {{ add $i 1 }}
     }
+    {{- end }}
+    {{- if gt $n 2 }},
+    {{- with index $all (sub $n 1) }}
+    {
+      "@type": "Article",
+      "name": {{ .Title | plainify }},
+      "url": {{ .Permalink | safeHTML }},
+      "position": {{ $n }}
+    }
+    {{- end }}
     {{- end }}
   ]
 }
