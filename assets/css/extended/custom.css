@@ -24,6 +24,37 @@ body {
   }
 }
 
+/* ==========================================================
+   正文二级列表缩进
+   ========================================================== */
+/* 一级列表：缩小默认缩进 */
+.article-content ol,
+.article-content ul {
+  padding-left: 1.5em !important;
+}
+
+/* 二级列表：只比一级再缩一点 */
+.article-content ol ul,
+.article-content ul ul {
+  padding-left: 0.7em !important;
+  list-style-type: disc !important;
+}
+
+/* ==========================================================
+   正文标题间距（h2 / h3）
+   ========================================================== */
+.article-content h2 {
+  font-size: 1.1em;
+  margin-top: 1.2em;
+  margin-bottom: 0.7em;
+}
+
+.article-content h3 {
+  font-size: 1em;
+  margin-top: 1em;
+  margin-bottom: 0.6em;
+}
+
 .breadcrumbs a {
   color: #5b7c99;
   text-decoration: none;
@@ -175,7 +206,7 @@ body {
   /* 页面改为单栏 */
   .page-layout {
     flex-direction: column;
-    align-items: stretch;
+    align-items: stretch; 
   }
 
   .sidebar {
@@ -221,6 +252,7 @@ body {
   display: block;
   margin: 0.5em auto;
 }
+
 
 /* 分类页文章卡片配图：铺满卡片宽度 */
 .article-card-img {
