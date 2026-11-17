@@ -294,13 +294,11 @@ body {
 .article-content th {
   background: #f5f5f5 !important;
   font-weight: 600;
-  white-space: nowrap;
 }
 
 /* 第一列（对比项）略加粗，便于扫读 */
 .article-content td:first-child {
   font-weight: 600;
-  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -311,5 +309,7 @@ body {
   .article-content th,
   .article-content td {
     padding: 8px 8px !important;
+    word-break: normal;   /* 新加这一行 */
+    
   }
 }
